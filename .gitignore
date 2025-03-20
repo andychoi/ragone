@@ -1,0 +1,79 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.swp
+*.swo
+.DS_Store
+
+# Virtual environment
+venv/
+.env
+.venv/
+*.venv
+
+# Environment variables and credentials
+.env
+*.env
+config.json
+secrets.json
+credentials.json
+
+# Logs and debug files
+logs/
+*.log
+nohup.out
+debug.log
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.iml
+
+# Cache files
+.cache/
+*.cache
+
+# LangChain and Qdrant data
+*.db
+vectorstore/
+qdrant_data/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+build/
+*.tar
+*.pid
+
+# Pytest & Testing
+htmlcov/
+*.cover
+*.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Compiled Cython files
+*.so
+
+# Temporary files
+tmp/
+temp/
+
+# FastAPI and Uvicorn logs
+instance/
+*.pid
+*.sock
+
+# Hugging Face model cache
+~/.cache/huggingface/
+hf_cache/
+
+# ollama or local LLM cache
+~/.ollama/

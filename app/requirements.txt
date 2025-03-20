@@ -1,0 +1,11 @@
+langchain
+langchain-community==0.3.20  # ✅ Compatible with LangChain
+langchain-huggingface==0.1.2  # ✅ Needed for embeddings
+langchain-qdrant==0.2.0  # ✅ Updated for Qdrant integration
+langgraph==0.3.18
+qdrant-client==1.13.3
+docling
+gemma
+sentence-transformers
+fastapi
+uvicorn
