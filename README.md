@@ -16,6 +16,14 @@ rag-service/
 
 ⸻
 
+pip install sentence-transformers
+python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-reranker-base')"
+
+Caches it in: ~/.cache/huggingface/hub/models--BAAI--bge-reranker-base
+
+⸻
+
+
 📌 Step 6: Running the Service
 
 1️⃣ Start the service:
@@ -62,5 +70,29 @@ URL	Description
 /docs	Swagger UI
 /redoc	ReDoc docs
 
+
+⸻
+
+1️⃣ Rebuild and Restart Containers
+
+docker-compose down --rmi all --volumes --remove-orphans
+docker-compose build --no-cache
+docker-compose up -d
+
+2️⃣ Test It
+
+docker logs rag-service -f
+curl "http://localhost:8000/query?q=What is Azure OpenAI?"
+
+
+
+⸻
+ß
+✅ Final Setup Overview
+
+Component	Model	Tool
+Embedding	BAAI/bge-base-en-v1.5	HuggingFaceEmbeddings
+Reranker	BAAI/bge-reranker-v2-m3	CrossEncoder
+Response Generator	Azure OpenAI GPT-4	API
 
 

@@ -9,6 +9,7 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
+from sentence_transformers import CrossEncoder
 from sentence_transformers import SentenceTransformer, util
 from pydantic import BaseModel
 from typing import List
@@ -45,8 +46,13 @@ vector_store = QdrantVectorStore(
     embedding=embedding_model
 )
 
-# Load reranker model
-reranker = SentenceTransformer("BAAI/bge-reranker-base")
+# Load reranker model  BAAI/bge-reranker-v2-m3 -> require token
+# reranker = SentenceTransformer(
+#     "BAAI/bge-reranker-v2-m3",
+#     use_auth_token=os.getenv("HUGGINGFACE_TOKEN")
+# )
+# reranker = SentenceTransformer("BAAI/bge-reranker-v2-m3")
+reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
 
 # FastAPI app
 app = FastAPI()
@@ -62,28 +68,43 @@ class RAGState(BaseModel):
 graph = StateGraph(RAGState)
 
 # Define RAG nodes
+def rerank_documents(state: RAGState) -> RAGState:
+    if not state.retrieved_docs:
+        return RAGState(
+            query=state.query,
+            retrieved_docs=[],
+            reranked_docs=[]
+        )
+
+    # Prepare (query, document) pairs
+    pairs = [(state.query, doc["text"]) for doc in state.retrieved_docs]
+
+    # Predict relevance scores using the reranker
+    scores = reranker.predict(pairs)
+
+    # Sort documents by score descending
+    reranked_docs = [
+        doc for _, doc in sorted(
+            zip(scores, state.retrieved_docs),
+            key=lambda x: x[0],
+            reverse=True
+        )
+    ]
+
+    return RAGState(
+        query=state.query,
+        retrieved_docs=state.retrieved_docs,
+        reranked_docs=reranked_docs
+    )
+
 def retrieve_documents(state: RAGState) -> RAGState:
     docs = vector_store.similarity_search(state.query, k=5)
+    if not docs:
+        return RAGState(query=state.query, retrieved_docs=[])
+    
     return RAGState(
         query=state.query,
         retrieved_docs=[{"text": doc.page_content} for doc in docs]
-    )
-
-def rerank_documents(state: RAGState) -> RAGState:
-    query_embedding = reranker.encode(state.query, convert_to_tensor=True)
-
-    reranked_docs = sorted(
-        state.retrieved_docs,
-        key=lambda doc: util.cos_sim(
-            query_embedding,
-            reranker.encode(doc["text"], convert_to_tensor=True)
-        ),
-        reverse=True
-    )
-
-    return RAGState(
-        query=state.query,
-        reranked_docs=reranked_docs
     )
 
 def generate_response(state: RAGState) -> RAGState:
@@ -98,7 +119,7 @@ def generate_response(state: RAGState) -> RAGState:
     }
 
     response = requests.post(
-        f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2023-03-15-preview",
+        f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions?api-version=2025-01-01-preview",
         headers=headers,
         json={
             "messages": [
@@ -113,7 +134,20 @@ def generate_response(state: RAGState) -> RAGState:
     if response.status_code == 200:
         answer = response.json().get("choices", [{}])[0].get("message", {}).get("content", "No response generated.")
     else:
-        answer = f"Error: {response.status_code}, {response.text}"
+        # Try to extract detailed error from response
+        try:
+            error_info = response.json().get("error", {})
+            code = error_info.get("code", "UnknownCode")
+            message = error_info.get("message", "No message provided")
+            error_type = error_info.get("type", "UnknownType")
+            answer = f"⚠️ Azure OpenAI Error ({code}): {message} (type: {error_type})"
+        except Exception as parse_err:
+            # fallback if error response isn't JSON
+            answer = f"❌ HTTP {response.status_code} error: {response.text}"
+
+        except Exception as e:
+            answer = f"❌ Exception during OpenAI request: {str(e)}"
+
 
     return RAGState(
         query=state.query,
@@ -134,6 +168,14 @@ graph.set_entry_point("retrieve_documents")
 graph.set_finish_point("generate_response")  # ✅ Correct method
 
 from fastapi.responses import HTMLResponse, JSONResponse
+
+# Compile the graph into an executable pipeline
+rag_pipeline = graph.compile()
+
+@app.get("/query")
+def query_rag(q: str):
+    response = rag_pipeline.invoke(RAGState(query=q))
+    return {"answer": response.get("final_answer", "No answer generated.")}
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():

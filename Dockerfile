@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app /app
 
 # Copy the .env file (Ensure it's included in .dockerignore)
-COPY .env /app/.env
+COPY app/.env /app/.env
 
 # Expose API port
 EXPOSE 8000

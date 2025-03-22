@@ -19,15 +19,16 @@ services:
       - qdrant
     ports:
       - "8000:8000"
+    env_file:
+      - app/.env
     environment:
-      QDRANT_HOST: "http://qdrant:6333"
-      AZURE_OPENAI_ENDPOINT: "https://your-azure-openai-instance.openai.azure.com"
-      AZURE_OPENAI_API_KEY: "your-api-key"
-      AZURE_OPENAI_DEPLOYMENT_NAME: "gpt-4"
-      AZURE_OPENAI_REGION: "eastus"
-      HF_HOME: "/root/.cache/huggingface"  # ✅ Set Hugging Face cache location
+      HF_HOME: "/root/.cache/huggingface"  # Use this inside container
       TRANSFORMERS_NO_ADVISORY_WARNINGS: "1"
-      REQUESTS_CA_BUNDLE: "/etc/ssl/certs/ca-certificates.crt"  # ✅ Force correct CA bundle   
+      REQUESTS_CA_BUNDLE: "/etc/ssl/certs/ca-certificates.crt"
+      HUGGINGFACE_TOKEN: ${HUGGINGFACE_TOKEN}  # Optional if using other models that need login
+    volumes:
+      # ✅ Mount local Hugging Face model cache into container
+      - ~/.cache/huggingface:/root/.cache/huggingface  # Read-only is fine if models are pre-downloaded
 
 volumes:
   qdrant_data:
