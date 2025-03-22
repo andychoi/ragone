@@ -51,3 +51,16 @@ curl "http://localhost:8000/query?q=What is AI?"
 	•	API Interface → FastAPI
 	•	Graph-based Execution → LangGraph
 
+
+⸻
+
+URL	Description
+/	Home page with helpful links
+/health	Health check endpoint
+/query?q=...	Your RAG endpoint
+/query-form	Simple HTML form for asking questions
+/docs	Swagger UI
+/redoc	ReDoc docs
+
+
+
