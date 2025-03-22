@@ -13,7 +13,7 @@ services:
 
   rag-service:
     build: .
-    container_name: rag_pipeline
+    container_name: rag-service
     restart: always
     depends_on:
       - qdrant
@@ -21,6 +21,13 @@ services:
       - "8000:8000"
     environment:
       QDRANT_HOST: "http://qdrant:6333"
+      AZURE_OPENAI_ENDPOINT: "https://your-azure-openai-instance.openai.azure.com"
+      AZURE_OPENAI_API_KEY: "your-api-key"
+      AZURE_OPENAI_DEPLOYMENT_NAME: "gpt-4"
+      AZURE_OPENAI_REGION: "eastus"
+      HF_HOME: "/root/.cache/huggingface"  # ✅ Set Hugging Face cache location
+      TRANSFORMERS_NO_ADVISORY_WARNINGS: "1"
+      REQUESTS_CA_BUNDLE: "/etc/ssl/certs/ca-certificates.crt"  # ✅ Force correct CA bundle   
 
 volumes:
   qdrant_data:
