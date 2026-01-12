@@ -1,6 +1,6 @@
 # requirements.txt
 langchain
-langchain-community==0.3.20
+langchain-community==0.3.27
 langchain-huggingface>=0.1.2
 langchain-qdrant>=0.2.0
 langgraph==0.3.18
